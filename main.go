@@ -5,6 +5,8 @@ import (
     "net/http"
     "strings"
     "log"
+    "os"
+    "net"
 
     "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
