@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "go-dog"
+  labels:
+    istio-injection: disabled
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "go-dog"
+  namespace: "go-dg"
+  labels:
+    app: "go-dog"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: "go-dog"
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: "go-dog"
+    spec:
+      containers:
+      - name: go-dog
+        image: vk/go-dog:latest
+        imagePullPolicy: Always
+        env:
+        - name: DD_AGENT_HOST
+          valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+        - name: DD_TRACE_AGENT_PORT
+          value: "8126"
+        resources:
+          limits:
+            cpu: 1
+            memory: 256Mi
+          requests:
+            cpu: 1
+            memory: 256Mi
+        securityContext:
+          privileged: false
+        readinessProbe:
+          successThreshold: 1
+          failureThreshold: 5
+          initialDelaySeconds: 30
+          periodSeconds: 6
+          timeoutSeconds: 7
+          httpGet:
+            port: 9090
+            path: /
+        livenessProbe:
+          successThreshold: 1
+          failureThreshold: 3
+          initialDelaySeconds: 180
+          periodSeconds: 6
+          timeoutSeconds: 7
+          httpGet:
+            port: 9090
+            path: /
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "go-dog"
+  namespace: "go-dog"
+  labels:
+    app: go-dog
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app: go-dog
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 9090
+  sessionAffinity: None
