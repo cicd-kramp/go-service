@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: go-dog
-        image: vk/go-dog:latest
+        image: kramp/go-service:latest
         imagePullPolicy: Always
         env:
         - name: DD_AGENT_HOST
