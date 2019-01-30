@@ -29,7 +29,10 @@ func main() {
         os.Getenv("DD_AGENT_HOST"),
         os.Getenv("DD_TRACE_AGENT_PORT"),
     )
-    tracer.Start(tracer.WithAgentAddr(addr))
+    tracer.Start(
+	    tracer.WithAgentAddr(addr),
+	    tracer.WithDebugMode(true),
+    )
     defer tracer.Stop()
 
     http.HandleFunc("/", sayhelloName) // set router
