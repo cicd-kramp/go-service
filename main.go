@@ -5,9 +5,9 @@ import (
     "net/http"
     "strings"
     "log"
-    "os"
-    "net"
+    "expvar"
 
+    httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
     "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -24,19 +24,23 @@ func sayhelloName(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Hello astaxie!") // send data to client side
 }
 
+func sayHello(w http.ResponseWriter, r *http.Request) {
+  message := r.URL.Path
+  message = strings.TrimPrefix(message, "/")
+  message = "Hello " + message
+  w.Write([]byte(message))
+}
+
 func main() {
-    addr := net.JoinHostPort(
-        os.Getenv("DD_AGENT_HOST"),
-        os.Getenv("DD_TRACE_AGENT_PORT"),
-    )
-    tracer.Start(
-	    tracer.WithAgentAddr(addr),
-	    tracer.WithDebugMode(true),
-    )
+    tracer.Start(tracer.WithServiceName("go-dog"))
     defer tracer.Stop()
 
-    http.HandleFunc("/", sayhelloName) // set router
-    err := http.ListenAndServe(":9090", nil) // set listen port
+    mux := httptrace.NewServeMux() // init the http tracer
+    mux.HandleFunc("/", sayhelloName) // use the tracer to handle the urls
+    mux.HandleFunc("/dog", sayHello) // use the tracer to handle the urls
+    mux.Handle("/debug/vars", http.DefaultServeMux) // use the tracer to handle the urls
+
+    err := http.ListenAndServe(":9090", mux) // set listen port
     if err != nil {
         log.Fatal("ListenAndServe: ", err)
     }
